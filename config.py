@@ -26,7 +26,7 @@ class Config:
     # Google OAuth
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
     GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
-    GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', 'http://localhost:5000/login/callback')
+    GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', 'http://localhost:6000/login/callback')
 
     # Answer Service
     ANSWER_SERVICE_URL = os.environ.get('ANSWER_SERVICE_URL', 'http://localhost:8000/v2/answer')
