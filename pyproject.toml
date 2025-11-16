@@ -43,7 +43,6 @@ dependencies = [
 installer = "uv"
 path = "/Users/piiopah/.hatch/envs/Rutabaga_QA_Website"
 python = "3.11"
-skip-install = true
 
 [tool.hatch.envs.default.scripts]
 dev = "python app.py"
