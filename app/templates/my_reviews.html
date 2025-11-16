@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}My Reviews - Rutabaga QA{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">My Reviews</h2>
+        <p class="text-gray-600 mt-1">View and manage your review history</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 mb-6" x-data="{ tab: 'submitted' }">
+        <nav class="-mb-px flex space-x-8">
+            <button @click="tab = 'submitted'"
+                    :class="tab === 'submitted' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Submitted
+            </button>
+            <button @click="tab = 'drafts'"
+                    :class="tab === 'drafts' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Drafts
+            </button>
+            <button @click="tab = 'flagged'"
+                    :class="tab === 'flagged' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Flagged
+            </button>
+        </nav>
+
+        <!-- Tab Content -->
+        <div class="mt-6">
+            <div x-show="tab === 'submitted'" class="text-gray-600">
+                <p>Your submitted reviews will appear here.</p>
+                <p class="text-sm mt-2 text-gray-500">(To be implemented in Phase 4)</p>
+            </div>
+            <div x-show="tab === 'drafts'" class="text-gray-600">
+                <p>Your draft reviews will appear here.</p>
+                <p class="text-sm mt-2 text-gray-500">(To be implemented in Phase 4)</p>
+            </div>
+            <div x-show="tab === 'flagged'" class="text-gray-600">
+                <p>Your flagged reviews will appear here.</p>
+                <p class="text-sm mt-2 text-gray-500">(To be implemented in Phase 4)</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

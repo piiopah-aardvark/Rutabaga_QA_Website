@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Review - Rutabaga QA{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Stats Bar -->
+    <div class="bg-white rounded-lg shadow-sm p-4 mb-6 flex justify-between items-center"
+         hx-get="{{ url_for('api.session_stats') }}"
+         hx-trigger="load, every 30s"
+         hx-swap="innerHTML">
+        <div>
+            <span class="text-sm text-gray-600">Session:</span>
+            <span class="font-semibold text-gray-900" id="session-count">0</span>
+            <span class="text-sm text-gray-600">reviews</span>
+        </div>
+        <div>
+            <span class="text-sm text-gray-600">All-time:</span>
+            <span class="font-semibold text-gray-900" id="total-count">{{ current_user.total_reviews_submitted }}</span>
+            <span class="text-sm text-gray-600">reviews</span>
+        </div>
+    </div>
+
+    <!-- Intent Selector -->
+    <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Select Intent</label>
+        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                hx-get="{{ url_for('api.get_next_response') }}"
+                hx-target="#review-form"
+                hx-swap="innerHTML">
+            <option value="interaction">Interaction</option>
+            <option value="dosing">Dosing</option>
+            <option value="drug_dose_rsi">Drug Dose RSI</option>
+            <option value="bp_target">BP Target</option>
+            <option value="contraindication">Contraindication</option>
+            <option value="pregnancy">Pregnancy</option>
+            <option value="lactation">Lactation</option>
+            <option value="renal_dosing">Renal Dosing</option>
+            <option value="hepatic_dosing">Hepatic Dosing</option>
+            <option value="pediatric_dosing">Pediatric Dosing</option>
+            <option value="iv_compatibility">IV Compatibility</option>
+            <option value="calculator">Calculator</option>
+        </select>
+    </div>
+
+    <!-- Review Form -->
+    <div id="review-form" class="bg-white rounded-lg shadow-sm p-6">
+        <div class="text-center text-gray-500 py-12">
+            <p class="text-lg mb-2">Select an intent to start reviewing</p>
+            <p class="text-sm">Responses will auto-load when available</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update stats from HTMX response
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.target.id === 'review-form') {
+        // Response loaded
+    }
+});
+</script>
+{% endblock %}
