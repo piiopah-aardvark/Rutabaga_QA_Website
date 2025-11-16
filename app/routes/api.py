@@ -22,12 +22,80 @@ def get_next_response():
     if not response:
         return render_template('partials/empty_state.html', intent=intent), 200
 
+    # Construct Phase 1 subject based on intent
+    phase1_subject = _construct_phase1_subject(intent, response.slots)
+
     # Render review form partial
     return render_template(
         'partials/review_form.html',
         response=response,
-        intent=intent
+        intent=intent,
+        phase1_subject=phase1_subject
     ), 200
+
+
+def _construct_phase1_subject(intent: str, slots: dict) -> str:
+    """
+    Construct Phase 1 subject (the part that segments complete).
+
+    Args:
+        intent: Intent name
+        slots: Slot values
+
+    Returns:
+        Phase 1 subject string
+    """
+    if intent == 'interaction':
+        drug_a = slots.get('drug_a', 'Drug A')
+        drug_b = slots.get('drug_b', 'Drug B')
+        return f"The interaction between {drug_a} and {drug_b}"
+
+    elif intent in ['dosing', 'drug_dose_rsi']:
+        drug = slots.get('drug', 'the drug')
+        indication = slots.get('indication', '')
+        if indication:
+            return f"The dose of {drug} for {indication}"
+        return f"The dose of {drug}"
+
+    elif intent == 'contraindication':
+        drug = slots.get('drug', 'the drug')
+        return f"Contraindications for {drug}"
+
+    elif intent == 'pregnancy':
+        drug = slots.get('drug', 'the drug')
+        return f"Use of {drug} in pregnancy"
+
+    elif intent == 'lactation':
+        drug = slots.get('drug', 'the drug')
+        return f"Use of {drug} during lactation"
+
+    elif intent == 'renal_dosing':
+        drug = slots.get('drug', 'the drug')
+        return f"Renal dosing for {drug}"
+
+    elif intent == 'hepatic_dosing':
+        drug = slots.get('drug', 'the drug')
+        return f"Hepatic dosing for {drug}"
+
+    elif intent == 'pediatric_dosing':
+        drug = slots.get('drug', 'the drug')
+        return f"Pediatric dosing for {drug}"
+
+    elif intent == 'iv_compatibility':
+        drug_a = slots.get('drug_a', 'Drug A')
+        drug_b = slots.get('drug_b', 'Drug B')
+        return f"IV compatibility of {drug_a} with {drug_b}"
+
+    elif intent == 'bp_target':
+        condition = slots.get('condition', 'this condition')
+        return f"Blood pressure target for {condition}"
+
+    elif intent == 'calculator':
+        calc_type = slots.get('calculator_type', 'calculation')
+        return f"The {calc_type} result"
+
+    else:
+        return "The response"
 
 
 @api_bp.route('/session/stats')
