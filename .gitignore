@@ -26,6 +26,9 @@ ENV/
 env/
 .venv
 
+# Hatch
+.hatch/
+
 # Environment Variables
 .env
 .env.local

@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rutabaga-qa-website"
+version = "0.1.0"
+description = "Flask-based QA review portal for Rutabaga answer service quality assurance"
+requires-python = ">=3.11"
+dependencies = [
+    # Flask Core
+    "flask>=3.0.0",
+    "flask-sqlalchemy>=3.1.1",
+    "flask-login>=0.6.3",
+    "gunicorn>=21.2.0",
+
+    # Authentication
+    "authlib>=1.3.0",
+    "requests>=2.31.0",
+
+    # Database
+    "psycopg2-binary>=2.9.9",
+    "sqlalchemy>=2.0.23",
+
+    # Environment
+    "python-dotenv>=1.0.0",
+
+    # HTTP client for answer service
+    "httpx>=0.25.2",
+
+    # Forms
+    "flask-wtf>=1.2.1",
+    "wtforms>=3.1.1",
+
+    # Date/Time
+    "python-dateutil>=2.8.2",
+
+    # JSON handling
+    "orjson>=3.9.10",
+]
+
+[tool.hatch.envs.default]
+installer = "uv"
+path = "/Users/piiopah/.hatch/envs/Rutabaga_QA_Website"
+python = "3.11"
+skip-install = true
+
+[tool.hatch.envs.default.scripts]
+dev = "python app.py"
+serve = "gunicorn app:app --bind 0.0.0.0:6000 --workers 2 --timeout 120"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]

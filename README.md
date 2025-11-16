@@ -36,41 +36,41 @@ Flask-based web application for human review and quality assurance of Rutabaga's
    cd Rutabaga_QA_Website
    ```
 
-2. **Create virtual environment**
+2. **Install dependencies with hatch + uv**
    ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   # Hatch will automatically use uv to install dependencies
+   hatch env create
    ```
 
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Set up environment variables**
+3. **Set up environment variables**
    ```bash
    cp .env.example .env
    # Edit .env with your credentials
    ```
 
-5. **Run database migration** (from Rutabaga_Backend directory)
+4. **Run database migration** (from Rutabaga_Backend directory)
    ```bash
    cd ../Rutabaga_Backend
    PGPASSWORD=rutabaga_dev_password psql -h localhost -U rutabaga_user -d rutabaga \
      -f infrastructure/database/migrations/013_qa_reviews_schema.sql
    ```
 
-6. **Run the application**
+5. **Run the application**
    ```bash
    cd ../Rutabaga_QA_Website
-   flask run
-   # Or: python app.py
+   hatch run dev
+   # Or for production: hatch run serve
    ```
 
-7. **Access the website**
+6. **Access the website**
    ```
    http://localhost:6000
    ```
+
+> **Note**: This project uses [hatch](https://hatch.pypa.io/) for environment management and [uv](https://github.com/astral-sh/uv) for fast dependency installation. Install them with:
+> ```bash
+> pip install hatch uv
+> ```
 
 ## Configuration
 
