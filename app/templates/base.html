@@ -84,6 +84,186 @@
     </nav>
     {% endif %}
 
+    <!-- Floating Help Button -->
+    {% if current_user.is_authenticated and request.endpoint == 'review.review_page' %}
+    <div x-data="{ expanded: false }" class="fixed bottom-6 right-6 z-40">
+        <!-- Expanded Buttons -->
+        <div x-show="expanded"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="mb-3 space-y-2">
+            <button @click="$dispatch('open-segment-guide'); expanded = false"
+                    class="block w-full px-4 py-2 bg-white text-gray-700 rounded-lg shadow-lg hover:bg-gray-50 border border-gray-200 text-sm font-medium whitespace-nowrap">
+                📋 Segment Guide
+            </button>
+            <button @click="$dispatch('open-scoring-guide'); expanded = false"
+                    class="block w-full px-4 py-2 bg-white text-gray-700 rounded-lg shadow-lg hover:bg-gray-50 border border-gray-200 text-sm font-medium whitespace-nowrap">
+                📊 Scoring Guide
+            </button>
+        </div>
+
+        <!-- Main Info Button -->
+        <button @click="expanded = !expanded"
+                class="w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200"
+                :class="{ 'rotate-45': expanded }">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </button>
+    </div>
+    {% endif %}
+
+    <!-- Segment Guide Modal -->
+    <div x-data="{ open: false }"
+         @open-segment-guide.window="open = true"
+         @keydown.escape.window="open = false"
+         x-show="open"
+         class="fixed inset-0 z-50 overflow-y-auto"
+         style="display: none;">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+             @click="open = false"></div>
+
+        <!-- Modal -->
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="relative bg-white rounded-lg shadow-xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto"
+                 @click.away="open = false">
+                <!-- Header -->
+                <div class="flex items-start justify-between mb-4 sticky top-0 bg-white pb-4 border-b">
+                    <h3 class="text-xl font-bold text-gray-900">Segment Guide</h3>
+                    <button @click="open = false" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Content -->
+                <div class="space-y-6">
+                    <!-- Overview -->
+                    <div>
+                        <p class="text-sm text-gray-600">
+                            Every response consists of 4 segments (S1-S4) that complete the Phase 1 subject.
+                            Each segment serves a specific purpose for voice delivery.
+                        </p>
+                    </div>
+
+                    <!-- General Segment Definitions -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-bold text-gray-900 mb-3">Segment Structure</h4>
+                        <div class="space-y-3 text-sm">
+                            <div>
+                                <span class="font-semibold text-indigo-600">S1 - Headline/Predicate:</span>
+                                <span class="text-gray-700"> Concise predicate (40-80 chars) that directly completes the subject. Voice-optimized, lowercase, verb-start.</span>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-green-600">S2 - Clinical Details:</span>
+                                <span class="text-gray-700"> Additional clinical context, monitoring requirements, or key considerations.</span>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-orange-600">S3 - Context/Safety:</span>
+                                <span class="text-gray-700"> Mechanism, safety warnings, or important contextual information.</span>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-gray-600">S4 - Source:</span>
+                                <span class="text-gray-700"> Source attribution (e.g., "Source: FDA DailyMed").</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Intent-Specific Examples -->
+                    <div>
+                        <h4 class="font-bold text-gray-900 mb-3">Examples by Intent</h4>
+
+                        <!-- Interaction -->
+                        <div class="border-l-4 border-indigo-500 pl-4 mb-4">
+                            <div class="font-bold text-gray-900 mb-2">Interaction</div>
+                            <div class="text-sm text-gray-600 mb-2 italic">Subject: "The interaction between warfarin and amiodarone..."</div>
+                            <div class="space-y-1 text-sm">
+                                <div><span class="font-semibold">S1:</span> "significantly increases INR and bleeding risk"</div>
+                                <div><span class="font-semibold">S2:</span> "Monitor INR closely when starting or stopping amiodarone; warfarin dose reduction often needed"</div>
+                                <div><span class="font-semibold">S3:</span> "Amiodarone inhibits CYP2C9 metabolism of warfarin, leading to elevated levels"</div>
+                                <div><span class="font-semibold">S4:</span> "Source: FDA DailyMed"</div>
+                            </div>
+                        </div>
+
+                        <!-- Dosing -->
+                        <div class="border-l-4 border-green-500 pl-4 mb-4">
+                            <div class="font-bold text-gray-900 mb-2">Dosing</div>
+                            <div class="text-sm text-gray-600 mb-2 italic">Subject: "The dose of ketamine for RSI..."</div>
+                            <div class="space-y-1 text-sm">
+                                <div><span class="font-semibold">S1:</span> "is 1 to 2 milligrams per kilogram IV push"</div>
+                                <div><span class="font-semibold">S2:</span> "Onset within 30 to 60 seconds; duration 10 to 20 minutes"</div>
+                                <div><span class="font-semibold">S3:</span> "Use lower end of range in hypotension or shock; may cause transient hypertension"</div>
+                                <div><span class="font-semibold">S4:</span> "Source: AHA ACLS Guidelines; DailyMed"</div>
+                            </div>
+                        </div>
+
+                        <!-- Contraindication -->
+                        <div class="border-l-4 border-red-500 pl-4 mb-4">
+                            <div class="font-bold text-gray-900 mb-2">Contraindication</div>
+                            <div class="text-sm text-gray-600 mb-2 italic">Subject: "Contraindications for lisinopril..."</div>
+                            <div class="space-y-1 text-sm">
+                                <div><span class="font-semibold">S1:</span> "include pregnancy, angioedema history, and concomitant aliskiren use in diabetes"</div>
+                                <div><span class="font-semibold">S2:</span> "Discontinue immediately if pregnancy detected; do not use with sacubitril within 36 hours"</div>
+                                <div><span class="font-semibold">S3:</span> "ACE inhibitors can cause fetal renal dysfunction and death; angioedema risk increased with sacubitril"</div>
+                                <div><span class="font-semibold">S4:</span> "Source: FDA DailyMed"</div>
+                            </div>
+                        </div>
+
+                        <!-- Pregnancy -->
+                        <div class="border-l-4 border-purple-500 pl-4 mb-4">
+                            <div class="font-bold text-gray-900 mb-2">Pregnancy</div>
+                            <div class="text-sm text-gray-600 mb-2 italic">Subject: "Use of warfarin in pregnancy..."</div>
+                            <div class="space-y-1 text-sm">
+                                <div><span class="font-semibold">S1:</span> "is contraindicated except in women with mechanical heart valves at high risk of thromboembolism"</div>
+                                <div><span class="font-semibold">S2:</span> "Can cause fetal warfarin syndrome in first trimester and bleeding in third trimester"</div>
+                                <div><span class="font-semibold">S3:</span> "Consider heparin alternatives; if warfarin required, use lowest effective dose with close monitoring"</div>
+                                <div><span class="font-semibold">S4:</span> "Source: FDA DailyMed"</div>
+                            </div>
+                        </div>
+
+                        <!-- Renal Dosing -->
+                        <div class="border-l-4 border-blue-500 pl-4 mb-4">
+                            <div class="font-bold text-gray-900 mb-2">Renal Dosing</div>
+                            <div class="text-sm text-gray-600 mb-2 italic">Subject: "Renal dosing for vancomycin..."</div>
+                            <div class="space-y-1 text-sm">
+                                <div><span class="font-semibold">S1:</span> "requires dose reduction and interval extension based on creatinine clearance"</div>
+                                <div><span class="font-semibold">S2:</span> "For CrCl 20-49: reduce dose by 50% or extend interval to 24-48 hours"</div>
+                                <div><span class="font-semibold">S3:</span> "Monitor trough levels closely; nephrotoxicity risk increases with impaired renal function"</div>
+                                <div><span class="font-semibold">S4:</span> "Source: FDA DailyMed"</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Key Principles -->
+                    <div class="bg-indigo-50 rounded-lg p-4">
+                        <h4 class="font-bold text-indigo-900 mb-2">Key Principles</h4>
+                        <ul class="list-disc list-inside space-y-1 text-sm text-indigo-800">
+                            <li>S1 must be a predicate that grammatically completes the subject</li>
+                            <li>S1 should be concise (40-80 chars ideal) and voice-optimized</li>
+                            <li>All segments use lowercase except proper nouns and acronyms</li>
+                            <li>Voice delivery: Subject + S1 + S2 + S3 + S4 flows naturally when spoken</li>
+                            <li>Clinical accuracy is paramount - never sacrifice correctness for brevity</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="mt-6 text-center border-t pt-4">
+                    <button @click="open = false"
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scoring Guide Modal -->
     <div x-data="{ open: false }"
          @open-scoring-guide.window="open = true"
