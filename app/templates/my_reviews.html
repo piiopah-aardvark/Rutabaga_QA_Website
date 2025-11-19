@@ -3,47 +3,326 @@
 {% block title %}My Reviews - Rutabaga QA{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="mb-6">
-        <h2 class="text-2xl font-bold text-gray-900">My Reviews</h2>
-        <p class="text-gray-600 mt-1">View and manage your review history</p>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" x-data="myReviews()">
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">My Reviews</h2>
+            <p class="text-gray-600 mt-1">View and manage your review history</p>
+        </div>
+        <a href="/review" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+            Back to Review
+        </a>
     </div>
 
     <!-- Tabs -->
-    <div class="border-b border-gray-200 mb-6" x-data="{ tab: 'submitted' }">
+    <div class="border-b border-gray-200 mb-6">
         <nav class="-mb-px flex space-x-8">
-            <button @click="tab = 'submitted'"
-                    :class="tab === 'submitted' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+            <button @click="currentTab = 'submitted'; loadReviews()"
+                    :class="currentTab === 'submitted' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                     class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                 Submitted
+                <span x-show="counts.submitted > 0" class="ml-2 py-0.5 px-2 rounded-full text-xs bg-gray-100" x-text="counts.submitted"></span>
             </button>
-            <button @click="tab = 'drafts'"
-                    :class="tab === 'drafts' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+            <button @click="currentTab = 'draft'; loadReviews()"
+                    :class="currentTab === 'draft' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                     class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                 Drafts
+                <span x-show="counts.draft > 0" class="ml-2 py-0.5 px-2 rounded-full text-xs bg-gray-100" x-text="counts.draft"></span>
             </button>
-            <button @click="tab = 'flagged'"
-                    :class="tab === 'flagged' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+            <button @click="currentTab = 'flagged'; loadReviews()"
+                    :class="currentTab === 'flagged' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                     class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                 Flagged
+                <span x-show="counts.flagged > 0" class="ml-2 py-0.5 px-2 rounded-full text-xs bg-gray-100" x-text="counts.flagged"></span>
             </button>
         </nav>
+    </div>
 
-        <!-- Tab Content -->
+    <!-- Loading State -->
+    <div x-show="loading" class="text-center py-12">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <p class="mt-2 text-gray-600">Loading reviews...</p>
+    </div>
+
+    <!-- Reviews Table -->
+    <div x-show="!loading && reviews.length > 0" class="bg-white shadow overflow-hidden sm:rounded-md">
+        <ul class="divide-y divide-gray-200">
+            <template x-for="review in reviews" :key="review.id">
+                <li class="px-6 py-4 hover:bg-gray-50">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center space-x-3">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800" x-text="review.intent"></span>
+                                <span x-show="!review.is_current" class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    Old Version
+                                </span>
+                            </div>
+                            <p class="mt-2 text-sm font-medium text-gray-900" x-text="review.query_text"></p>
+                            <div class="mt-2 flex items-center text-sm text-gray-500 space-x-4">
+                                <span>
+                                    Avg Score: <span class="font-medium" :class="{
+                                        'text-green-600': review.avg_score >= 4,
+                                        'text-yellow-600': review.avg_score >= 3 && review.avg_score < 4,
+                                        'text-orange-600': review.avg_score < 3
+                                    }" x-text="review.avg_score"></span>
+                                </span>
+                                <span x-show="review.submitted_at">
+                                    Submitted: <span x-text="formatDate(review.submitted_at)"></span>
+                                </span>
+                                <span x-show="review.version > 1">
+                                    Version <span x-text="review.version"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="ml-4 flex-shrink-0 flex space-x-2">
+                            <button @click="viewReview(review.id)"
+                                    class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+                                View
+                            </button>
+                            <button x-show="review.status === 'submitted'"
+                                    @click="requestRereview(review.id)"
+                                    class="inline-flex items-center px-3 py-1.5 border border-indigo-300 shadow-sm text-xs font-medium rounded text-indigo-700 bg-white hover:bg-indigo-50">
+                                Re-review
+                            </button>
+                        </div>
+                    </div>
+                </li>
+            </template>
+        </ul>
+    </div>
+
+    <!-- Empty State -->
+    <div x-show="!loading && reviews.length === 0" class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No reviews</h3>
+        <p class="mt-1 text-sm text-gray-500">You haven't <span x-text="currentTab"></span> any reviews yet.</p>
         <div class="mt-6">
-            <div x-show="tab === 'submitted'" class="text-gray-600">
-                <p>Your submitted reviews will appear here.</p>
-                <p class="text-sm mt-2 text-gray-500">(To be implemented in Phase 4)</p>
+            <a href="/review" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                Start Reviewing
+            </a>
+        </div>
+    </div>
+
+    <!-- Re-review Modal -->
+    <div x-show="showRereviewModal"
+         x-cloak
+         class="fixed z-10 inset-0 overflow-y-auto"
+         @keydown.escape.window="showRereviewModal = false">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showRereviewModal = false"></div>
+
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Request Re-review</h3>
+                    <p class="text-sm text-gray-500 mb-4">Why do you want to re-review this response?</p>
+                    <textarea x-model="rereviewReason"
+                              rows="3"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              placeholder="e.g., Found better wording, noticed an error, new information available..."></textarea>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button @click="submitRereview()"
+                            type="button"
+                            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 sm:ml-3 sm:w-auto sm:text-sm">
+                        Submit Request
+                    </button>
+                    <button @click="showRereviewModal = false"
+                            type="button"
+                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancel
+                    </button>
+                </div>
             </div>
-            <div x-show="tab === 'drafts'" class="text-gray-600">
-                <p>Your draft reviews will appear here.</p>
-                <p class="text-sm mt-2 text-gray-500">(To be implemented in Phase 4)</p>
-            </div>
-            <div x-show="tab === 'flagged'" class="text-gray-600">
-                <p>Your flagged reviews will appear here.</p>
-                <p class="text-sm mt-2 text-gray-500">(To be implemented in Phase 4)</p>
+        </div>
+    </div>
+
+    <!-- View Review Modal -->
+    <div x-show="showViewModal"
+         x-cloak
+         class="fixed z-10 inset-0 overflow-y-auto"
+         @keydown.escape.window="showViewModal = false">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showViewModal = false"></div>
+
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Review Details</h3>
+                        <button @click="showViewModal = false" class="text-gray-400 hover:text-gray-500">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <template x-if="viewedReview">
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Query</p>
+                                <p class="mt-1 text-base text-gray-900" x-text="viewedReview.query_text"></p>
+                            </div>
+
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 mb-2">Segment Scores</p>
+                                <div class="space-y-2">
+                                    <template x-for="(scoreData, segmentId) in viewedReview.segment_scores" :key="segmentId">
+                                        <div class="border border-gray-200 rounded p-3">
+                                            <div class="flex items-center justify-between mb-1">
+                                                <span class="text-xs font-medium text-gray-500" x-text="segmentId"></span>
+                                                <span class="text-sm font-medium" :class="{
+                                                    'text-green-600': scoreData.score >= 4,
+                                                    'text-yellow-600': scoreData.score >= 3 && scoreData.score < 4,
+                                                    'text-orange-600': scoreData.score < 3
+                                                }">Score: <span x-text="scoreData.score"></span>/5</span>
+                                            </div>
+                                            <p class="text-sm text-gray-700" x-text="getSegmentText(viewedReview.segments, segmentId)"></p>
+                                            <template x-if="scoreData.suggestion">
+                                                <div class="mt-2 p-2 bg-blue-50 rounded">
+                                                    <p class="text-xs font-medium text-blue-900">Suggested improvement:</p>
+                                                    <p class="text-sm text-blue-800" x-text="scoreData.suggestion"></p>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <div x-show="viewedReview.overall_notes">
+                                <p class="text-sm font-medium text-gray-500">Overall Notes</p>
+                                <p class="mt-1 text-sm text-gray-700" x-text="viewedReview.overall_notes"></p>
+                            </div>
+
+                            <div x-show="viewedReview.flag_reason">
+                                <p class="text-sm font-medium text-red-600">Flag Reason</p>
+                                <p class="mt-1 text-sm text-gray-700" x-text="viewedReview.flag_reason"></p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+function myReviews() {
+    return {
+        currentTab: 'submitted',
+        reviews: [],
+        counts: {
+            submitted: 0,
+            draft: 0,
+            flagged: 0
+        },
+        loading: true,
+        showRereviewModal: false,
+        showViewModal: false,
+        selectedReviewId: null,
+        rereviewReason: '',
+        viewedReview: null,
+
+        async init() {
+            await this.loadReviews();
+            await this.loadCounts();
+        },
+
+        async loadReviews() {
+            this.loading = true;
+            try {
+                const response = await fetch(`/api/my-reviews?status=${this.currentTab}`);
+                const data = await response.json();
+                if (data.success) {
+                    this.reviews = data.reviews;
+                }
+            } catch (error) {
+                console.error('Error loading reviews:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async loadCounts() {
+            // Load counts for all statuses
+            for (const status of ['submitted', 'draft', 'flagged']) {
+                try {
+                    const response = await fetch(`/api/my-reviews?status=${status}`);
+                    const data = await response.json();
+                    if (data.success) {
+                        this.counts[status] = data.reviews.length;
+                    }
+                } catch (error) {
+                    console.error(`Error loading ${status} count:`, error);
+                }
+            }
+        },
+
+        async viewReview(reviewId) {
+            try {
+                const response = await fetch(`/api/review/${reviewId}`);
+                const data = await response.json();
+                if (data.success) {
+                    this.viewedReview = data.review;
+                    this.showViewModal = true;
+                }
+            } catch (error) {
+                console.error('Error loading review details:', error);
+                alert('Failed to load review details');
+            }
+        },
+
+        requestRereview(reviewId) {
+            this.selectedReviewId = reviewId;
+            this.rereviewReason = '';
+            this.showRereviewModal = true;
+        },
+
+        async submitRereview() {
+            if (!this.rereviewReason.trim()) {
+                alert('Please provide a reason for re-review');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/rereview/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        review_id: this.selectedReviewId,
+                        reason: this.rereviewReason
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    this.showRereviewModal = false;
+                    alert('Re-review request submitted! The response has been added back to your review queue.');
+                    await this.loadReviews();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to submit re-review request'));
+                }
+            } catch (error) {
+                console.error('Error submitting re-review:', error);
+                alert('Failed to submit re-review request');
+            }
+        },
+
+        formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        },
+
+        getSegmentText(segments, segmentId) {
+            const segment = segments.find(s => s.id === segmentId);
+            return segment ? segment.text : '';
+        }
+    }
+}
+</script>
+
+<style>
+[x-cloak] { display: none !important; }
+</style>
 {% endblock %}

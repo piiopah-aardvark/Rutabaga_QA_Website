@@ -46,7 +46,7 @@ python = "3.11"
 
 [tool.hatch.envs.default.scripts]
 dev = "python app.py"
-serve = "gunicorn app:app --bind 0.0.0.0:6000 --workers 2 --timeout 120"
+serve = "gunicorn app:app --bind 0.0.0.0:9000 --workers 2 --timeout 120"
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]

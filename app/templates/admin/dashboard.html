@@ -3,45 +3,285 @@
 {% block title %}Admin Dashboard - Rutabaga QA{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" x-data="adminDashboard()">
     <div class="mb-6">
         <h2 class="text-2xl font-bold text-gray-900">Admin Dashboard</h2>
         <p class="text-gray-600 mt-1">Global statistics and reviewer management</p>
     </div>
 
     <!-- Global Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <div class="bg-white rounded-lg shadow-sm p-6">
             <div class="text-sm font-medium text-gray-600 mb-1">Total Responses</div>
-            <div class="text-3xl font-bold text-gray-900">0</div>
+            <div class="text-3xl font-bold text-gray-900" x-text="stats.total_responses || 0"></div>
         </div>
         <div class="bg-white rounded-lg shadow-sm p-6">
             <div class="text-sm font-medium text-gray-600 mb-1">Submitted</div>
-            <div class="text-3xl font-bold text-green-600">0</div>
+            <div class="text-3xl font-bold text-green-600" x-text="stats.submitted || 0"></div>
         </div>
         <div class="bg-white rounded-lg shadow-sm p-6">
             <div class="text-sm font-medium text-gray-600 mb-1">Flagged</div>
-            <div class="text-3xl font-bold text-red-600">0</div>
+            <div class="text-3xl font-bold text-red-600" x-text="stats.flagged || 0"></div>
         </div>
         <div class="bg-white rounded-lg shadow-sm p-6">
             <div class="text-sm font-medium text-gray-600 mb-1">Pending</div>
-            <div class="text-3xl font-bold text-blue-600">0</div>
+            <div class="text-3xl font-bold text-blue-600" x-text="stats.pending || 0"></div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="text-sm font-medium text-gray-600 mb-1">Prod Updates</div>
+            <div class="text-3xl font-bold text-indigo-600" x-text="stats.production_updates || 0"></div>
         </div>
     </div>
 
-    <!-- Placeholder -->
-    <div class="bg-white rounded-lg shadow-sm p-6">
-        <div class="text-gray-600">
-            <p class="text-lg mb-2">Admin dashboard features coming soon:</p>
-            <ul class="list-disc list-inside space-y-1 text-sm">
-                <li>Global statistics by intent</li>
-                <li>Flagged items management</li>
-                <li>Reviewer statistics and leaderboard</li>
-                <li>Export reviews to CSV</li>
-                <li>Reviewer activation/deactivation</li>
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 mb-6">
+        <nav class="-mb-px flex space-x-8">
+            <button @click="currentTab = 'flagged'; loadFlaggedItems()"
+                    :class="currentTab === 'flagged' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Flagged Items
+                <span x-show="flaggedItems.length > 0" class="ml-2 py-0.5 px-2 rounded-full text-xs bg-gray-100" x-text="flaggedItems.length"></span>
+            </button>
+            <button @click="currentTab = 'reviewers'; loadReviewers()"
+                    :class="currentTab === 'reviewers' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Reviewers
+                <span x-show="reviewers.length > 0" class="ml-2 py-0.5 px-2 rounded-full text-xs bg-gray-100" x-text="reviewers.length"></span>
+            </button>
+            <button @click="currentTab = 'scores'"
+                    :class="currentTab === 'scores' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Scores by Intent
+            </button>
+        </nav>
+    </div>
+
+    <!-- Flagged Items Tab -->
+    <div x-show="currentTab === 'flagged'">
+        <div x-show="loading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <p class="mt-2 text-gray-600">Loading flagged items...</p>
+        </div>
+
+        <div x-show="!loading && flaggedItems.length === 0" class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No flagged items</h3>
+            <p class="mt-1 text-sm text-gray-500">All responses are looking good!</p>
+        </div>
+
+        <div x-show="!loading && flaggedItems.length > 0" class="bg-white shadow overflow-hidden sm:rounded-md">
+            <ul class="divide-y divide-gray-200">
+                <template x-for="item in flaggedItems" :key="item.review_id">
+                    <li class="px-6 py-4 hover:bg-gray-50">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800" x-text="item.intent"></span>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-red-100 text-red-800">FLAGGED</span>
+                                </div>
+                                <p class="text-sm font-medium text-gray-900" x-text="item.query_text"></p>
+                                <p class="mt-1 text-sm text-gray-600">
+                                    <span class="font-medium">Reason:</span> <span x-text="item.flag_reason"></span>
+                                </p>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    Flagged by <span x-text="item.reviewer_name"></span> on <span x-text="formatDate(item.created_at)"></span>
+                                </p>
+                            </div>
+                            <div class="ml-4 flex-shrink-0">
+                                <a :href="`/api/review/${item.review_id}`" target="_blank"
+                                   class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    </li>
+                </template>
             </ul>
-            <p class="text-xs mt-4 text-gray-500">(To be implemented in Phase 6)</p>
+        </div>
+    </div>
+
+    <!-- Reviewers Tab -->
+    <div x-show="currentTab === 'reviewers'">
+        <div x-show="loading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <p class="mt-2 text-gray-600">Loading reviewers...</p>
+        </div>
+
+        <div x-show="!loading && reviewers.length > 0" class="bg-white shadow overflow-hidden sm:rounded-md">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reviewer</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specialization</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flagged</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Drafts</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Score</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <template x-for="reviewer in reviewers" :key="reviewer.id">
+                        <tr :class="{'bg-gray-50': !reviewer.is_active}">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900" x-text="reviewer.name"></div>
+                                <div class="text-sm text-gray-500" x-text="reviewer.email"></div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="reviewer.specialization || 'N/A'"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="reviewer.total_submitted"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600" x-text="reviewer.total_flagged"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="reviewer.total_drafts"></td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-sm font-medium" :class="{
+                                    'text-green-600': reviewer.avg_score >= 4,
+                                    'text-yellow-600': reviewer.avg_score >= 3 && reviewer.avg_score < 4,
+                                    'text-orange-600': reviewer.avg_score < 3,
+                                    'text-gray-400': reviewer.avg_score === 0
+                                }" x-text="reviewer.avg_score || 'N/A'"></span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="reviewer.last_active ? formatDate(reviewer.last_active) : 'Never'"></td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span :class="reviewer.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'"
+                                      class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                                      x-text="reviewer.is_active ? 'Active' : 'Inactive'"></span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button @click="toggleReviewer(reviewer.id, reviewer.is_active)"
+                                        class="text-indigo-600 hover:text-indigo-900"
+                                        x-text="reviewer.is_active ? 'Deactivate' : 'Activate'"></button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Scores by Intent Tab -->
+    <div x-show="currentTab === 'scores'">
+        <div class="bg-white shadow overflow-hidden sm:rounded-md p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Average Scores by Intent</h3>
+
+            <div x-show="Object.keys(stats.avg_scores_by_intent || {}).length === 0" class="text-center py-8 text-gray-500">
+                No submitted reviews yet
+            </div>
+
+            <div x-show="Object.keys(stats.avg_scores_by_intent || {}).length > 0" class="space-y-4">
+                <template x-for="(score, intent) in stats.avg_scores_by_intent || {}" :key="intent">
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700 capitalize" x-text="intent"></span>
+                            <span class="text-2xl font-bold" :class="{
+                                'text-green-600': score >= 4,
+                                'text-yellow-600': score >= 3 && score < 4,
+                                'text-orange-600': score < 3
+                            }" x-text="score.toFixed(1)"></span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="h-2 rounded-full transition-all"
+                                 :class="{
+                                     'bg-green-600': score >= 4,
+                                     'bg-yellow-600': score >= 3 && score < 4,
+                                     'bg-orange-600': score < 3
+                                 }"
+                                 :style="`width: ${(score / 5) * 100}%`"></div>
+                        </div>
+                    </div>
+                </template>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+function adminDashboard() {
+    return {
+        currentTab: 'flagged',
+        loading: false,
+        stats: {},
+        flaggedItems: [],
+        reviewers: [],
+
+        async init() {
+            await this.loadStats();
+            await this.loadFlaggedItems();
+        },
+
+        async loadStats() {
+            try {
+                const response = await fetch('/admin/api/stats');
+                const data = await response.json();
+                if (data.success) {
+                    this.stats = data.stats;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        },
+
+        async loadFlaggedItems() {
+            this.loading = true;
+            try {
+                const response = await fetch('/admin/api/flagged');
+                const data = await response.json();
+                if (data.success) {
+                    this.flaggedItems = data.flagged_items;
+                }
+            } catch (error) {
+                console.error('Error loading flagged items:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async loadReviewers() {
+            this.loading = true;
+            try {
+                const response = await fetch('/admin/api/reviewers');
+                const data = await response.json();
+                if (data.success) {
+                    this.reviewers = data.reviewers;
+                }
+            } catch (error) {
+                console.error('Error loading reviewers:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async toggleReviewer(reviewerId, currentStatus) {
+            const action = currentStatus ? 'deactivate' : 'activate';
+            if (!confirm(`Are you sure you want to ${action} this reviewer?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/api/reviewer/${reviewerId}/toggle`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    await this.loadReviewers();
+                    alert(`Reviewer ${action}d successfully`);
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to toggle reviewer status'));
+                }
+            } catch (error) {
+                console.error('Error toggling reviewer:', error);
+                alert('Failed to toggle reviewer status');
+            }
+        },
+
+        formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+    }
+}
+</script>
 {% endblock %}

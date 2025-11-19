@@ -1,4 +1,49 @@
-<div x-data="reviewForm({{ response.id }}, {{ response.segments | tojson }})" class="space-y-6">
+<div x-data="reviewForm({{ response.id }}, {{ response.segments | tojson }}, {{ previous_review | tojson if previous_review else 'null' }})" class="space-y-6">
+    <!-- Re-review Banner -->
+    {% if previous_review %}
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3 flex-1">
+                <h3 class="text-sm font-medium text-yellow-800">RE-REVIEW MODE</h3>
+                <div class="mt-2 text-sm text-yellow-700">
+                    <p><strong>Previous review:</strong> Submitted on {{ previous_review.submitted_at[:10] if previous_review.submitted_at else 'Unknown' }} | Avg Score: <span class="font-bold">{{ previous_review.avg_score }}</span>/5</p>
+                    {% if previous_review.rereview_reason %}
+                    <p class="mt-1"><strong>Reason for re-review:</strong> {{ previous_review.rereview_reason }}</p>
+                    {% endif %}
+                    <button @click="showPreviousReview = !showPreviousReview"
+                            class="mt-2 text-xs font-medium text-yellow-900 hover:text-yellow-800 underline">
+                        <span x-text="showPreviousReview ? 'Hide' : 'Show'"></span> previous scores
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Previous Review Details (Collapsible) -->
+        <div x-show="showPreviousReview" x-collapse class="mt-4 border-t border-yellow-200 pt-4">
+            <h4 class="text-xs font-medium text-yellow-900 mb-2">Previous Segment Scores:</h4>
+            <div class="space-y-1">
+                <template x-for="(scoreData, segmentId) in previousReview.segment_scores" :key="segmentId">
+                    <div class="text-xs text-yellow-800">
+                        <span class="font-medium" x-text="segmentId"></span>:
+                        Score <span x-text="scoreData.score"></span>/5
+                        <span x-show="scoreData.suggestion" class="italic ml-2">- Had suggestion</span>
+                    </div>
+                </template>
+            </div>
+            {% if previous_review.overall_notes %}
+            <div class="mt-2 text-xs text-yellow-800">
+                <span class="font-medium">Previous notes:</span> {{ previous_review.overall_notes }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Query Display -->
     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 class="text-sm font-medium text-blue-900 mb-2">Query</h3>
@@ -73,19 +118,47 @@
 
     <!-- Source Data Button -->
     <div class="flex items-center space-x-4">
-        <button @click="showSourceData = !showSourceData"
+        <button @click="toggleSourceData()"
                 class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-            <span x-text="showSourceData ? 'Hide Source Data' : 'View Source Data'"></span>
+            <span x-text="showSourceData ? 'Hide Production Database Record' : 'View Production Database Record'"></span>
         </button>
-        <a href="#" class="text-sm text-gray-600 hover:text-gray-800">
-            View Original Source (Re-ingest)
-        </a>
     </div>
 
     <!-- Source Data Panel (collapsible) -->
-    <div x-show="showSourceData" x-collapse class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <h4 class="text-sm font-medium text-gray-900 mb-2">Source Data</h4>
-        <pre class="text-xs text-gray-700 overflow-auto">{{ response.source_references | tojson(indent=2) }}</pre>
+    <div x-show="showSourceData" x-collapse class="bg-gray-50 border border-indigo-200 rounded-lg p-4">
+        <div class="mb-4">
+            <h4 class="text-sm font-medium text-gray-900 mb-1">Production Database Record (Complete Source Data)</h4>
+            <p class="text-xs text-gray-600">This is the full record as ingested from the source provider, showing all database fields.</p>
+        </div>
+
+        <template x-if="loadingSourceData">
+            <div class="flex items-center justify-center py-8">
+                <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+                <span class="ml-3 text-sm text-gray-600">Loading source data...</span>
+            </div>
+        </template>
+
+        <template x-if="!loadingSourceData && sourceData">
+            <div class="space-y-3">
+                <template x-for="(value, key) in sourceData" :key="key">
+                    <div class="bg-white border border-gray-200 rounded-lg p-3">
+                        <div class="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-1" x-text="key.replace(/_/g, ' ')"></div>
+                        <div class="text-sm text-gray-900 whitespace-pre-wrap"
+                             :class="typeof value === 'object' ? 'font-mono text-xs' : ''"
+                             x-text="typeof value === 'object' ? JSON.stringify(value, null, 2) : (value || '(empty)')"></div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <template x-if="!loadingSourceData && !sourceData">
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                </svg>
+                <p class="mt-2 text-sm text-gray-500">No source data available</p>
+            </div>
+        </template>
     </div>
 
     <!-- Action Buttons -->
@@ -116,15 +189,39 @@
 </div>
 
 <script>
-function reviewForm(responseId, segments) {
+function reviewForm(responseId, segments, previousReview) {
     return {
         responseId: responseId,
         showSourceData: false,
+        sourceData: null,
+        loadingSourceData: false,
         overallNotes: '',
+        showPreviousReview: false,
+        previousReview: previousReview || {},
         scores: segments.reduce((acc, seg) => {
             acc[seg.id] = { score: null, suggestion: '' };
             return acc;
         }, {}),
+
+        async toggleSourceData() {
+            this.showSourceData = !this.showSourceData;
+
+            // Fetch source data if not already loaded
+            if (this.showSourceData && !this.sourceData && !this.loadingSourceData) {
+                this.loadingSourceData = true;
+                try {
+                    const response = await fetch(`/api/source-data/${this.responseId}`);
+                    const data = await response.json();
+                    if (data.success) {
+                        this.sourceData = data.source_data;
+                    }
+                } catch (error) {
+                    console.error('Error fetching source data:', error);
+                } finally {
+                    this.loadingSourceData = false;
+                }
+            }
+        },
 
         canSubmit() {
             // All segments must have a score

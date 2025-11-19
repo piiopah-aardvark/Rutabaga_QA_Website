@@ -64,7 +64,7 @@ Flask-based web application for human review and quality assurance of Rutabaga's
 
 6. **Access the website**
    ```
-   http://localhost:6000
+   http://localhost:9000
    ```
 
 > **Note**: This project uses [hatch](https://hatch.pypa.io/) for environment management and [uv](https://github.com/astral-sh/uv) for fast dependency installation. Install them with:
@@ -78,7 +78,7 @@ Flask-based web application for human review and quality assurance of Rutabaga's
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
 2. Create OAuth 2.0 credentials
-3. Add authorized redirect URI: `http://localhost:6000/login/callback`
+3. Add authorized redirect URI: `http://localhost:9000/login/callback`
 4. Copy Client ID and Secret to `.env`
 
 ### Pre-Approved Reviewers

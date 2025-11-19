@@ -9,6 +9,7 @@ from app.models import (
     ResponseQueue, Review, ReviewAuditLog, ReviewSession,
     RereviewRequest, ProductionUpdate
 )
+from app.services.production_update_service import ProductionUpdateService
 
 
 class ReviewService:
@@ -302,11 +303,24 @@ class ReviewService:
             )
             db.session.add(audit)
 
-            # TODO: Update production tables (Phase 5)
-            # For now, just log what would be updated
-            current_app.logger.info(
-                f"Review {review.id} submitted. Production update pending implementation."
+            # Update production database (Phase 5)
+            prod_update = ProductionUpdateService.update_production(
+                response,
+                segment_scores,
+                reviewer_id
             )
+
+            if prod_update:
+                # Set review_id and add to session
+                prod_update.review_id = review.id
+                db.session.add(prod_update)
+                current_app.logger.info(
+                    f"Review {review.id} submitted. Production database updated."
+                )
+            else:
+                current_app.logger.warning(
+                    f"Review {review.id} submitted but production update failed or not applicable."
+                )
 
             db.session.commit()
             return True
