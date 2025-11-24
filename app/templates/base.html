@@ -15,12 +15,7 @@
     <script>
     // Global reviewForm function for Alpine.js
     window.reviewForm = function(responseId, segments, previousReview) {
-        console.log('=== reviewForm CALLED ===');
-        console.log('responseId:', responseId);
-        console.log('segments:', segments);
-        console.log('previousReview:', previousReview);
-
-        const formData = {
+        return {
             responseId: responseId,
             showSourceData: false,
             sourceData: null,
@@ -175,18 +170,7 @@
                 setTimeout(() => toast.remove(), 3000);
             }
         };
-
-        console.log('=== reviewForm RETURNING ===');
-        console.log('formData keys:', Object.keys(formData));
-        console.log('flag function:', formData.flag);
-        console.log('submit function:', formData.submit);
-
-        return formData;
     };
-
-    // Debug: Confirm function is loaded
-    console.log('=== window.reviewForm LOADED ===');
-    console.log('Type:', typeof window.reviewForm);
     </script>
 
     <!-- Alpine.js for interactive components -->
