@@ -253,16 +253,21 @@ class ProductionUpdateService:
     @staticmethod
     def get_source_data(response_queue: ResponseQueue) -> Optional[Dict[str, Any]]:
         """
-        Get source data from production database for display.
+        Get clinician-friendly FDA source data for display.
 
         Args:
             response_queue: The response queue item
 
         Returns:
-            Dict with source data or None
+            Dict with formatted FDA source data or None
         """
         intent = response_queue.intent
 
+        # For interactions, show FDA DailyMed source quotes
+        if intent == 'interaction':
+            return ProductionUpdateService._get_fda_interaction_source(response_queue)
+
+        # For other intents, fall back to raw database record
         if intent not in ProductionUpdateService.INTENT_TABLE_MAPPING:
             return None
 
@@ -281,3 +286,77 @@ class ProductionUpdateService:
             mapping['lookup_fields'],
             lookup_values
         )
+
+    @staticmethod
+    def _get_fda_interaction_source(response_queue: ResponseQueue) -> Optional[Dict[str, Any]]:
+        """
+        Get FDA DailyMed source quotes for drug-drug interactions.
+
+        Returns:
+            Dict with FDA source quotes and metadata
+        """
+        drug_a = response_queue.slots.get('drug_a')
+        drug_b = response_queue.slots.get('drug_b')
+
+        if not drug_a or not drug_b:
+            return None
+
+        # Fetch DDI record with FDA quotes
+        query = text("""
+            SELECT
+                subject_drug,
+                object_drug,
+                set_id,
+                version,
+                quotes,
+                effect,
+                guidance,
+                severity,
+                mechanism,
+                evidence,
+                source_anchor
+            FROM public.document_ddi_pairs
+            WHERE subject_drug = :drug_a AND object_drug = :drug_b
+            LIMIT 1
+        """)
+
+        try:
+            result = db.session.execute(query, {'drug_a': drug_a, 'drug_b': drug_b})
+            row = result.first()
+
+            if not row:
+                return None
+
+            # Format for clinician review
+            source_data = {
+                'Drug Pair': f"{row.subject_drug} + {row.object_drug}",
+                'FDA Set ID': row.set_id,
+                'Version': row.version,
+                'Severity': row.severity or 'Not specified',
+                'Mechanism': row.mechanism or 'Not specified',
+                'Evidence Level': row.evidence or 'Not specified',
+            }
+
+            # Add FDA source quotes if available
+            if row.quotes:
+                quotes_list = row.quotes if isinstance(row.quotes, list) else []
+                if quotes_list:
+                    source_data['FDA Source Quotes'] = [
+                        {
+                            'text': q.get('span_text', ''),
+                            'section': q.get('section_key', 'Unknown'),
+                            'position': f"Characters {q.get('start', '?')}-{q.get('end', '?')}"
+                        }
+                        for q in quotes_list
+                    ]
+
+            # Add current response content for reference
+            source_data['_separator_1'] = '--- Current Response Content ---'
+            source_data['Effect (S1)'] = row.effect or ''
+            source_data['Guidance (S2)'] = row.guidance or ''
+
+            return source_data
+
+        except Exception as e:
+            current_app.logger.error(f"Error fetching FDA source data: {e}")
+            return None
