@@ -233,14 +233,23 @@ function reviewForm(responseId, segments, previousReview) {
         },
 
         async skip() {
-            const response = await fetch('/api/review/skip', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ response_id: this.responseId })
-            });
+            try {
+                const response = await fetch('/api/review/skip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ response_id: this.responseId })
+                });
 
-            if (response.ok) {
-                this.loadNext();
+                if (response.ok) {
+                    this.loadNext();
+                } else {
+                    const error = await response.json();
+                    alert(`Error skipping: ${error.error || 'Unknown error'}`);
+                    console.error('Skip failed:', error);
+                }
+            } catch (error) {
+                alert(`Network error: ${error.message}`);
+                console.error('Skip error:', error);
             }
         },
 
@@ -248,61 +257,90 @@ function reviewForm(responseId, segments, previousReview) {
             const reason = prompt('Why are you flagging this response?\n\n(e.g., "Incorrect slots", "Bad ingestion", "Other issue")');
             if (!reason) return;
 
-            const response = await fetch('/api/review/flag', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    response_id: this.responseId,
-                    flag_reason: reason,
-                    segment_scores: this.getSegmentScores(),
-                    overall_notes: this.overallNotes
-                })
-            });
+            try {
+                const response = await fetch('/api/review/flag', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        response_id: this.responseId,
+                        flag_reason: reason,
+                        segment_scores: this.getSegmentScores(),
+                        overall_notes: this.overallNotes
+                    })
+                });
 
-            if (response.ok) {
-                alert('Response flagged for admin review');
-                this.loadNext();
+                if (response.ok) {
+                    alert('Response flagged for admin review');
+                    this.loadNext();
+                } else {
+                    const error = await response.json();
+                    alert(`Error flagging: ${error.error || 'Unknown error'}`);
+                    console.error('Flag failed:', error);
+                }
+            } catch (error) {
+                alert(`Network error: ${error.message}`);
+                console.error('Flag error:', error);
             }
         },
 
         async saveDraft() {
-            const response = await fetch('/api/review/draft', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    response_id: this.responseId,
-                    segment_scores: this.getSegmentScores(),
-                    overall_notes: this.overallNotes
-                })
-            });
+            try {
+                const response = await fetch('/api/review/draft', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        response_id: this.responseId,
+                        segment_scores: this.getSegmentScores(),
+                        overall_notes: this.overallNotes
+                    })
+                });
 
-            if (response.ok) {
-                alert('Draft saved successfully');
-                this.loadNext();
+                if (response.ok) {
+                    alert('Draft saved successfully');
+                    this.loadNext();
+                } else {
+                    const error = await response.json();
+                    alert(`Error saving draft: ${error.error || 'Unknown error'}`);
+                    console.error('Save draft failed:', error);
+                }
+            } catch (error) {
+                alert(`Network error: ${error.message}`);
+                console.error('Save draft error:', error);
             }
         },
 
         async submit() {
-            if (!this.canSubmit()) return;
+            if (!this.canSubmit()) {
+                alert('Please score all segments before submitting');
+                return;
+            }
 
-            const response = await fetch('/api/review/submit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    response_id: this.responseId,
-                    segment_scores: this.getSegmentScores(),
-                    overall_notes: this.overallNotes
-                })
-            });
+            try {
+                const response = await fetch('/api/review/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        response_id: this.responseId,
+                        segment_scores: this.getSegmentScores(),
+                        overall_notes: this.overallNotes
+                    })
+                });
 
-            const data = await response.json();
-            if (data.success) {
-                // Show success toast
-                this.showToast(data.message);
-                // Update stats
-                htmx.trigger('#stats-bar', 'refresh');
-                // Load next
-                this.loadNext();
+                const data = await response.json();
+                if (data.success) {
+                    // Show success toast
+                    this.showToast(data.message);
+                    // Update stats
+                    htmx.trigger('#stats-bar', 'refresh');
+                    // Load next
+                    this.loadNext();
+                } else {
+                    alert(`Error submitting: ${data.message || 'Unknown error'}`);
+                    console.error('Submit failed:', data);
+                }
+            } catch (error) {
+                alert(`Network error: ${error.message}`);
+                console.error('Submit error:', error);
             }
         },
 
