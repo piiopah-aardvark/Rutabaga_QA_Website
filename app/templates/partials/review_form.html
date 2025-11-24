@@ -141,50 +141,45 @@
         <template x-if="!loadingSourceData && sourceData">
             <div class="space-y-4">
                 <template x-for="(value, key) in sourceData" :key="key">
-                    <div>
-                        <!-- Skip separator keys -->
-                        <template x-if="!key.startsWith('_separator')">
-                            <!-- Special formatting for FDA Source Quotes -->
-                            <template x-if="key === 'FDA Source Quotes' && Array.isArray(value)">
-                                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
-                                    <h4 class="text-sm font-bold text-yellow-900 mb-3">FDA DailyMed Source Quotes</h4>
-                                    <div class="space-y-3">
-                                        <template x-for="(quote, idx) in value" :key="idx">
-                                            <div class="bg-white border border-yellow-200 rounded p-3">
-                                                <div class="text-sm text-gray-900 mb-2 italic" x-text="quote.text"></div>
-                                                <div class="flex items-center space-x-4 text-xs text-gray-600">
-                                                    <span><strong>Section:</strong> <span x-text="quote.section"></span></span>
-                                                    <span><strong>Position:</strong> <span x-text="quote.position"></span></span>
-                                                </div>
-                                            </div>
-                                        </template>
+                    <div x-show="!key.startsWith('_separator')">
+                        <!-- Special formatting for FDA Source Quotes -->
+                        <div x-show="key === 'FDA Source Quotes' && Array.isArray(value)" class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+                            <h4 class="text-sm font-bold text-yellow-900 mb-3">FDA DailyMed Source Quotes</h4>
+                            <div class="space-y-3">
+                                <template x-for="(quote, idx) in value" :key="idx">
+                                    <div class="bg-white border border-yellow-200 rounded p-3">
+                                        <div class="text-sm text-gray-900 mb-2 italic" x-text="quote.text"></div>
+                                        <div class="flex items-center space-x-4 text-xs text-gray-600">
+                                            <span><strong>Section:</strong> <span x-text="quote.section"></span></span>
+                                            <span><strong>Position:</strong> <span x-text="quote.position"></span></span>
+                                        </div>
                                     </div>
-                                </div>
-                            </template>
+                                </template>
+                            </div>
+                        </div>
 
-                            <!-- Regular field display -->
-                            <template x-if="key !== 'FDA Source Quotes'">
-                                <div class="bg-white border border-gray-200 rounded-lg p-3">
-                                    <div class="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-1" x-text="key.replace(/_/g, ' ')"></div>
-                                    <!-- Special handling for URLs -->
-                                    <template x-if="typeof value === 'string' && value.startsWith('http')">
-                                        <a :href="value" target="_blank" rel="noopener noreferrer"
-                                           class="text-sm text-indigo-600 hover:text-indigo-800 underline flex items-center">
-                                            <span>View Full FDA Drug Label</span>
-                                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                                            </svg>
-                                        </a>
-                                    </template>
-                                    <!-- Non-URL content -->
-                                    <template x-if="!(typeof value === 'string' && value.startsWith('http'))">
-                                        <div class="text-sm text-gray-900 whitespace-pre-wrap"
-                                             :class="typeof value === 'object' ? 'font-mono text-xs' : ''"
-                                             x-text="typeof value === 'object' ? JSON.stringify(value, null, 2) : (value || '(empty)')"></div>
-                                    </template>
-                                </div>
-                            </template>
-                        </template>
+                        <!-- Regular field display -->
+                        <div x-show="key !== 'FDA Source Quotes'" class="bg-white border border-gray-200 rounded-lg p-3">
+                            <div class="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-1" x-text="key.replace(/_/g, ' ')"></div>
+
+                            <!-- URL link -->
+                            <a x-show="typeof value === 'string' && value.startsWith('http')"
+                               :href="value"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="text-sm text-indigo-600 hover:text-indigo-800 underline flex items-center">
+                                <span>View Full FDA Drug Label</span>
+                                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                </svg>
+                            </a>
+
+                            <!-- Non-URL content -->
+                            <div x-show="!(typeof value === 'string' && value.startsWith('http'))"
+                                 class="text-sm text-gray-900 whitespace-pre-wrap"
+                                 :class="typeof value === 'object' ? 'font-mono text-xs' : ''"
+                                 x-text="typeof value === 'object' ? JSON.stringify(value, null, 2) : (value || '(empty)')"></div>
+                        </div>
                     </div>
                 </template>
             </div>
