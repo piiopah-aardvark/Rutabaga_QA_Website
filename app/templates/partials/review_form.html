@@ -1,4 +1,4 @@
-<div x-data="reviewForm({{ response.id }}, {{ response.segments | tojson | safe }}, {{ previous_review | tojson | safe if previous_review else 'null' }})" class="space-y-6">
+<div x-data='reviewForm({{ response.id }}, {{ response.segments | tojson }}, {{ previous_review | tojson if previous_review else "null" }})' class="space-y-6">
     <!-- Re-review Banner -->
     {% if previous_review %}
     <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
