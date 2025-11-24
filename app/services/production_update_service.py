@@ -328,8 +328,12 @@ class ProductionUpdateService:
                 return None
 
             # Format for clinician review
+            # Build FDA DailyMed URL
+            dailymed_url = f"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid={row.set_id}"
+
             source_data = {
                 'Drug Pair': f"{row.subject_drug} + {row.object_drug}",
+                'FDA DailyMed Link': dailymed_url,
                 'FDA Set ID': row.set_id,
                 'Version': row.version,
                 'Severity': row.severity or 'Not specified',
