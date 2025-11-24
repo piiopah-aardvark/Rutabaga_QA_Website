@@ -35,8 +35,10 @@
                     try {
                         const response = await fetch(`/api/source-data/${this.responseId}`);
                         const data = await response.json();
+                        console.log('Source data received:', data);
                         if (data.success) {
                             this.sourceData = data.source_data;
+                            console.log('FDA DailyMed Link field:', this.sourceData['FDA DailyMed Link']);
                         }
                     } catch (error) {
                         console.error('Error fetching source data:', error);
