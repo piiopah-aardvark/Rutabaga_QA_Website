@@ -45,7 +45,7 @@ class ReviewService:
         if rereview:
             return rereview
 
-        # Priority 2: Unreviewed responses
+        # Priority 2: Unreviewed responses (newest first for test items to appear at top)
         unreviewed = db.session.query(ResponseQueue).filter(
             ResponseQueue.intent == intent,
             ResponseQueue.status == 'pending'
@@ -54,7 +54,7 @@ class ReviewService:
             Review.response_queue_id == ResponseQueue.id
         ).filter(
             Review.id.is_(None)  # No review exists
-        ).first()
+        ).order_by(ResponseQueue.created_at.desc()).first()
 
         return unreviewed
 
